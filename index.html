@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Quiz Generator</title>
+</head>
+<body>
+  <h1>AI Quiz Generator</h1>  
+  <form id="quiz-form">
+    <input id="topic" placeholder="Enter a topic" />
+    <button type="submit" id="generate">Generate Quiz</button>
+  </form>
+  
+  <div id="quiz"></div>
+
+  <script>
+    const topicInput = document.getElementById("topic");
+    const quizContainer = document.getElementById("quiz");
+
+    document.getElementById("quiz-form").addEventListener("submit", async (e) => {
+      e.preventDefault(); // Prevent page reload
+      
+      const topic = topicInput.value.trim();
+      if (!topic) {
+        console.log("No topic entered, please try again.");
+        return alert("Enter a topic in the field to generate a quiz.");
+      };
+
+      quizContainer.innerHTML = "Generating quiz, please wait...";
+
+      const res = await fetch("/api/quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic })
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        quizContainer.innerHTML = "Error: " + data.error;
+        return;
+      }
+
+      quizContainer.innerHTML = "";
+      data.questions.forEach((q, i) => {
+        const div = document.createElement("div");
+        div.innerHTML = `<strong>${i + 1}. ${q.question}</strong><br>
+          ${q.options.map(opt => `<label><input type="radio" name="q${i}" value="${opt}"> ${opt}</label><br>`).join("")}`;
+        quizContainer.appendChild(div);
+      });
+      const button = document.createElement("button");
+      button.textContent = "Submit Quiz";
+      quizContainer.appendChild(button);
+
+      button.addEventListener("click", () => {
+        for (let i = 0; i < 5; i++) {
+            const selectedAnswer = document.querySelector('input[name="q' + i + '"]:checked');
+            if (!selectedAnswer) {
+            alert("Please answer all questions before submitting!");
+            return;  // Stop here - don't check answers yet
+            }
+        }
+
+        let score = 0;
+        for (let i = 0; i < 5; i++) {
+            const selectedAnswer = document.querySelector('input[name="q' + i + '"]:checked');
+             const correctLetter = data.questions[i].answer; // "A", "B", "C", or "D"
+             const correctIndex = correctLetter.charCodeAt(0) - 65; // Convert A→0, B→1, C→2, D→3
+             const correctAnswerText = data.questions[i].options[correctIndex];
+                if (data.questions[i].answer === selectedAnswer.value[0]) {
+                    const div = document.createElement("div");
+                    div.innerHTML = `You answered question ${i + 1} correctly, ${correctAnswerText}!<br>`
+                    quizContainer.appendChild(div);
+                    score++; 
+                } else {
+                    const div = document.createElement("div");
+                    div.innerHTML = `You answered question ${i + 1} incorrectly... The correct answer was ${correctAnswerText}.<br>`
+                    quizContainer.appendChild(div);     
+                 }
+            }
+            const div = document.createElement("div");
+            div.innerHTML = `<strong>You answered ${score}/5 questions correctly!</strong><br>`
+            quizContainer.appendChild(div);
+      });
+    });
+  </script>
+</body>
+</html>
