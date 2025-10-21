@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-// Middleware to parse incoming JSON requests
+// Middleware to parse incoming JSON request
 app.use(express.json());
 
 // Serve static files (index.html, etc.) from current directory
